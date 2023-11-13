@@ -5,7 +5,7 @@ const axios = require('axios')
 const app = express()
 //below to show response in post query
 app.use(express.json())
-app.use(express.urlencoded({extended: true}))
+app.use(express.urlencoded({ extended: true }))
 const PORT = process.env.PORT || 3030;
 
 const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
@@ -44,10 +44,15 @@ app.post('/getToken', (req, res) => {
     keyid: body.keyid,
     algorithm: body.algorithm,
     header: {
-        id: body.hId
+      id: body.hId
     }
   })
-  res.send(token)
+
+  var data = {
+    'result': token,
+  }
+  res.send(data)
+  // res.send(token)
   // console.log(token)
 })
 
