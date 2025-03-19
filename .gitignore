@@ -143,3 +143,5 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/node
 
 AuthKey_L38ADHKU82.p8
+
+.env
