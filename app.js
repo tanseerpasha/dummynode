@@ -63,7 +63,7 @@ app.get('/getSunQualityTokenFromApi', (req, res) => {
 
 
 
-// const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
+const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
 
 // {
 //   sub: 'com.pa.myweatherkit',
