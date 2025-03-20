@@ -42,7 +42,7 @@ app.get('/getSunburstTokenFromDb', (req, res) => {
 
 
 
-app.get('/getSunQualityTokenFromApi', (req, res) => {
+app.get('/getSunburstTokenFromApi', (req, res) => {
   (async () => {
     const token = await sunburstLogin(true); // Pass true for remember_me
     if (token) {
