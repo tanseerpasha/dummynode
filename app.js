@@ -49,7 +49,7 @@ app.get('/getSunburstTokenFromApi', (req, res) => {
       await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
       // console.log("Access Token API1:", token);
       var data = {
-        'result': token,
+        'result': token.access_token,
       }
       res.send(data)
 
