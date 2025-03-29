@@ -5,7 +5,7 @@ const { Client } = require("pg");
 const client = new Client({
     // connectionString: "postgresql://mobileappspadb_lqov_user:Ktk6W47rbLUaAxNuemzNdf6UNQNwwuKz@dpg-cvcpisdumphs73af6rt0-a.oregon-postgres.render.com/mobileappspadb_lqov", // Load from environment variable
     //for local testing un comment above line and comment below line
-    connectionString: process.env.DATABASE_INTERNAL_URL || "Error",
+    connectionString: process.env.DATABASE_INTERNAL_URL || "postgresql://mobileappspadb_lqov_user:Ktk6W47rbLUaAxNuemzNdf6UNQNwwuKz@dpg-cvcpisdumphs73af6rt0-a.oregon-postgres.render.com/mobileappspadb_lqov",
     ssl: { rejectUnauthorized: false } // Required for Render
 });
 

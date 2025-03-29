@@ -9,6 +9,7 @@ const { sunburstLogin } = require("./sunburstApi");
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 const PORT = process.env.PORT || 3030;
+const KEY = process.env.KEY || "com.mtp.dunbar";
 
 // dummy functions 
 app.get('/', (req, res) => {
@@ -22,7 +23,8 @@ app.post('/', (req, res) => {
 
 // dummy functions  ends
 
-app.get('/getSunburstTokenFromDb', (req, res) => {
+app.get('/getSunburstTokenFromDbOld', (req, res) => {
+  
   (async () => {
     const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
     if (token) {
@@ -40,30 +42,66 @@ app.get('/getSunburstTokenFromDb', (req, res) => {
   })();
 })
 
-
-
-app.get('/getSunburstTokenFromApi', (req, res) => {
+app.post('/getSunburstTokenFromDb', (req, res) => {
+ 
+  
   (async () => {
-    const token = await sunburstLogin(true); // Pass true for remember_me
-    if (token) {
-      await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
-      // console.log("Access Token API1:", token);
-      var data = {
-        'result': token.access_token,
+    const key = req.body.key
+    console.log("getSunburstTokenFromDb.", key)
+    if(key == KEY){
+      const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
+      if (token) {
+        // console.log("Access Token DB:", token);
+        var data = {
+          'result': token,
+        }
+        res.send(data)
+  
+  
+      } else {
+        // console.log("Failed to retrieve access token.");
+        res.send("")
       }
-      res.send(data)
-
-
-    } else {
-      // console.log("Failed to retrieve access token.");
-      res.send(0)
+    }else{
+      // console.log("Not a valid key.");
+      res.send("")
     }
+    
   })();
 })
 
 
 
-const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
+app.post('/getSunburstTokenFromApi', (req, res) => {
+ 
+  (async () => {
+    const key = req.body.key
+    console.log("getSunburstTokenFromApi.", key)
+    if(key == KEY){
+      const token = await sunburstLogin(true); // Pass true for remember_me
+      if (token) {
+        await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
+        // console.log("Access Token API1:", token);
+        var data = {
+          'result': token.access_token,
+        }
+        res.send(data)
+  
+  
+      } else {
+        // console.log("Failed to retrieve access token.");
+        res.send(0)
+      }
+    }else{
+      res.send(0)
+    }
+   
+  })();
+})
+
+
+
+// const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
 
 // {
 //   sub: 'com.pa.myweatherkit',
