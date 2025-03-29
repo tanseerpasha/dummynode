@@ -3,7 +3,7 @@ const express = require("express")
 const jwt = require('jsonwebtoken')
 const fs = require('fs')
 const app = express()
-const { createTable, saveOrUpdateToken,getTokenFromDb } = require("./dbService");
+const { createTable, saveOrUpdateToken, getTokenFromDb } = require("./dbService");
 const { sunburstLogin } = require("./sunburstApi");
 
 //below to show response in post query
@@ -25,7 +25,7 @@ app.post('/', (req, res) => {
 // dummy functions  ends
 
 app.get('/getSunburstTokenFromDbOld', (req, res) => {
-  
+
   (async () => {
     const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
     if (token) {
@@ -44,14 +44,14 @@ app.get('/getSunburstTokenFromDbOld', (req, res) => {
 })
 
 app.post('/getSunburstTokenFromDb', (req, res) => {
- 
-  
+
+
   (async () => {
     const key = req.body.key
 
-   
+
     console.log("getSunburstTokenFromDb.", key)
-    if(key == KEY ){
+    if (key == KEY) {
       const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
       if (token) {
         // console.log("Access Token DB:", token);
@@ -59,28 +59,28 @@ app.post('/getSunburstTokenFromDb', (req, res) => {
           'result': token,
         }
         res.send(data)
-  
-  
+
+
       } else {
         // console.log("Failed to retrieve access token.");
         res.send("")
       }
-    }else{
+    } else {
       // console.log("Not a valid key.");
       res.send("")
     }
-    
+
   })();
 })
 
 
 
 app.post('/getSunburstTokenFromApi', (req, res) => {
- 
+
   (async () => {
     const key = req.body.key
     console.log("getSunburstTokenFromApi.", key)
-    if(key == KEY ){
+    if (key == KEY) {
       const token = await sunburstLogin(true); // Pass true for remember_me
       if (token) {
         await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
@@ -89,16 +89,16 @@ app.post('/getSunburstTokenFromApi', (req, res) => {
           'result': token.access_token,
         }
         res.send(data)
-  
-  
+
+
       } else {
         // console.log("Failed to retrieve access token.");
         res.send(0)
       }
-    }else{
+    } else {
       res.send(0)
     }
-   
+
   })();
 })
 
@@ -140,8 +140,10 @@ app.post('/getToken', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`server started on port ${PORT}`);
-  console.log("USERNAME", process.env.SUNBURST_USERNAME);
-  console.log("PASSWORD", process.env.SUNBURST_PASSWORD);
-  console.log("URL", process.env.DATABASE_INTERNAL_URL);
-  console.log("TOKEN_KEY", KEY);
+  if (PORT = 3030) {
+    console.log("USERNAME", process.env.SUNBURST_USERNAME);
+    console.log("PASSWORD", process.env.SUNBURST_PASSWORD);
+    console.log("URL", process.env.DATABASE_INTERNAL_URL);
+    console.log("TOKEN_KEY", KEY);
+  }
 });
