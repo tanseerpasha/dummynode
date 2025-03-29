@@ -103,18 +103,7 @@ app.post('/getSunburstTokenFromApi', (req, res) => {
 })
 
 
-
 const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
-
-// {
-//   sub: 'com.pa.myweatherkit',
-//   issuer: 'T4W24SQJKG',
-//   expiresIn: '1hr',
-//   keyid: 'L38ADHKU82',
-//   algorithm: 'ES256',
-//   hId: 'T4W24SQJKG.com.pa.myweatherkit'
-// }
-
 app.post('/getToken', (req, res) => {
   const body = req.body
   const token = jwt.sign({
@@ -140,7 +129,7 @@ app.post('/getToken', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`server started on port ${PORT}`);
-  if (PORT = 3030) {
+  if (PORT == 3030) {
     console.log("USERNAME", process.env.SUNBURST_USERNAME);
     console.log("PASSWORD", process.env.SUNBURST_PASSWORD);
     console.log("URL", process.env.DATABASE_INTERNAL_URL);
