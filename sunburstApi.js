@@ -5,8 +5,8 @@ const axios = require('axios')
 
 //mtp - remove hard coded values
 
-const username = process.env.SUNBURST_USERNAME || "admin@photographersarsenal.com";
-const password = process.env.SUNBURST_PASSWORD || "SunBurst2017";
+const username = process.env.SUNBURST_USERNAME;
+const password = process.env.SUNBURST_PASSWORD;
 const auth = Buffer.from(`${username}:${password}`).toString("base64");
 
 async function sunburstLogin(rememberMe = false) {

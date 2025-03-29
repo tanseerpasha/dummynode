@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express")
 const jwt = require('jsonwebtoken')
 const fs = require('fs')
@@ -8,8 +9,8 @@ const { sunburstLogin } = require("./sunburstApi");
 //below to show response in post query
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-const PORT = process.env.PORT || 3030;
-const KEY = process.env.KEY || "com.mtp.dunbar";
+const PORT = process.env.PORT;
+const KEY = process.env.TOKEN_KEY;
 
 // dummy functions 
 app.get('/', (req, res) => {
@@ -47,8 +48,10 @@ app.post('/getSunburstTokenFromDb', (req, res) => {
   
   (async () => {
     const key = req.body.key
+
+   
     console.log("getSunburstTokenFromDb.", key)
-    if(key == KEY){
+    if(key == KEY ){
       const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
       if (token) {
         // console.log("Access Token DB:", token);
@@ -77,7 +80,7 @@ app.post('/getSunburstTokenFromApi', (req, res) => {
   (async () => {
     const key = req.body.key
     console.log("getSunburstTokenFromApi.", key)
-    if(key == KEY){
+    if(key == KEY ){
       const token = await sunburstLogin(true); // Pass true for remember_me
       if (token) {
         await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
@@ -137,4 +140,8 @@ app.post('/getToken', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`server started on port ${PORT}`);
+  console.log("USERNAME", process.env.SUNBURST_USERNAME);
+  console.log("PASSWORD", process.env.SUNBURST_PASSWORD);
+  console.log("URL", process.env.DATABASE_INTERNAL_URL);
+  console.log("TOKEN_KEY", KEY);
 });
