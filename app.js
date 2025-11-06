@@ -43,39 +43,56 @@ app.get('/getSunburstTokenFromDbOld', (req, res) => {
   })();
 })
 
-app.post('/getSunburstTokenFromDb', (req, res) => {
+app.post("/getSunburstTokenFromDb", async (req, res) => {
+  try {
+    const key = req.body.key;
+    console.log("getSunburstTokenFromDb.", key);
 
-
-  (async () => {
-    const key = req.body.key
-
-
-    console.log("getSunburstTokenFromDb.", key)
-    if (key == KEY) {
-      const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
-      if (token) {
-        // console.log("Access Token DB:", token);
-        var data = {
-          'result': token,
-        }
-        res.send(data)
-
-
-      } else {
-        // console.log("Failed to retrieve access token.");
-        res.send("")
-      }
-    } else {
-      // console.log("Not a valid key.");
-      res.send("")
+    if (key !== KEY) {
+      return res.status(401).json({ error: "Invalid key" });
     }
 
-  })();
-})
+    const token = await getTokenFromDb("Sunburst");
+
+    if (token) {
+      return res.json({ result: token });
+    } else {
+      return res.status(404).json({ error: "No cached token found" });
+    }
+  } catch (err) {
+    console.error("getSunburstTokenFromDb failed:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
+app.post('/getSunburstTokenFromApi', async (req, res) => {
+  try {
+    const key = req.body.key;
+    console.log("getSunburstTokenFromApi.", key);
 
-app.post('/getSunburstTokenFromApi', (req, res) => {
+    if (key !== KEY) {
+      return res.status(401).json({ error: "Invalid key" });
+    }
+
+    const token = await sunburstLogin(true); // Pass true for remember_me
+
+    if (token && token.access_token) {
+      await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in);
+
+      return res.json({ result: token.access_token });
+    } else {
+      return res.status(400).json({ error: "Failed to retrieve access token." });
+    }
+
+  } catch (err) {
+    console.error("getSunburstTokenFromApi failed:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+app.post('/getSunburstTokenFromApiOld', (req, res) => {
 
   (async () => {
     const key = req.body.key
