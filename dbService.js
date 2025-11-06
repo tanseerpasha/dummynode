@@ -1,34 +1,22 @@
 const { Pool } = require("pg");
 
+// Use Render’s DATABASE_INTERNAL_URL from environment variables
 const pool = new Pool({
-  connectionString: process.env.DATABASE_INTERNAL_URL || "Error",
+  connectionString: process.env.DATABASE_INTERNAL_URL,
   ssl: { rejectUnauthorized: false } // Required for Render
 });
 
-// Handle unexpected disconnects gracefully
-pool.on("error", (err) => {
-  console.error("Unexpected PG connection error:", err);
-});
-
-// Create table if not exists
-async function createTable() {
-  const query = `
-    CREATE TABLE IF NOT EXISTS tokens (
-      id SERIAL PRIMARY KEY,
-      access_token TEXT NOT NULL,
-      expires_in INTEGER NOT NULL,
-      api_name TEXT NOT NULL UNIQUE,
-      updated_at TIMESTAMP DEFAULT NOW()
-    );
-  `;
+// ✅ Test connection once at startup
+async function connectDB() {
   try {
-    await pool.query(query);
-  } catch (error) {
-    console.error("Error creating table:", error);
+    const client = await pool.connect();
+    // console.log("✅ Connected to PostgreSQL");
+    client.release();
+  } catch (err) {
+    // console.error("❌ Database connection error:", err);
   }
 }
 
-// Get token from DB
 async function getTokenFromDb(apiName) {
   const query = `
     SELECT access_token, expires_in, EXTRACT(EPOCH FROM NOW()) AS current_time 
@@ -41,45 +29,67 @@ async function getTokenFromDb(apiName) {
     if (res.rows.length > 0) {
       const { access_token, expires_in, current_time } = res.rows[0];
       const expiresAt = parseInt(current_time) + expires_in;
-      return parseInt(current_time) > expiresAt ? null : access_token;
+
+      if (parseInt(current_time) > expiresAt) {
+        // console.log(`⚠️ Token for ${apiName} has expired.`);
+        return null;
+      }
+
+      return access_token;
+    } else {
+      // console.log(`⚠️ No token found for ${apiName}.`);
+      return null;
     }
-    return null;
   } catch (err) {
-    console.error("Error fetching token:", err);
+    // console.error("❌ Error fetching token:", err);
     return null;
   }
 }
 
-// Save or update token
 async function saveOrUpdateToken(apiName, token, expiresIn = 604800) {
   const query = `
     INSERT INTO tokens (access_token, expires_in, api_name, updated_at)
     VALUES ($1, $2, $3, NOW())
     ON CONFLICT (api_name) 
-    DO UPDATE SET access_token = EXCLUDED.access_token,
-                  expires_in = EXCLUDED.expires_in,
-                  updated_at = NOW()
+    DO UPDATE SET 
+      access_token = EXCLUDED.access_token, 
+      expires_in = EXCLUDED.expires_in, 
+      updated_at = NOW()
+    RETURNING *;
   `;
   const values = [token, expiresIn, apiName];
 
   try {
-    await pool.query(query, values);
+    const res = await pool.query(query, values);
+    // console.log(`✅ Token updated for ${apiName}:`, res.rows[0]);
   } catch (err) {
-    console.error("Error updating token:", err);
+    // console.error("❌ Error updating token:", err);
   }
 }
 
-// Optional explicit test connection
-async function connectDB() {
+async function createTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS tokens (
+      id SERIAL PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      expires_in INTEGER NOT NULL,
+      api_name TEXT NOT NULL UNIQUE,
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+
   try {
-    await pool.query("SELECT NOW()");
-    console.log("✅ PostgreSQL connection ready");
-  } catch (err) {
-    console.error("❌ Database connection error:", err);
+    await pool.query(query);
+    // console.log("✅ Tokens table created or verified");
+  } catch (error) {
+    // console.error("❌ Error creating table:", error);
   }
 }
 
+// Initialize once
 connectDB();
+// Use this for first-time setup only
+// createTable();
 
 module.exports = {
   connectDB,
