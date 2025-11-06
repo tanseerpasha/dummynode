@@ -1,9 +1,4 @@
-// Sunburst API start
-const axios = require('axios')
-
-// Your credentials 
-
-//mtp - remove hard coded values
+const axios = require('axios');
 
 const username = process.env.SUNBURST_USERNAME;
 const password = process.env.SUNBURST_PASSWORD;
@@ -11,29 +6,40 @@ const auth = Buffer.from(`${username}:${password}`).toString("base64");
 
 async function sunburstLogin(rememberMe = false) {
   try {
-      const response = await axios.post(
-          "https://sunburst.sunsetwx.com/v1/login",
-          new URLSearchParams({
-              grant_type: "password",
-              ...(rememberMe && { type: "remember_me" }) // Add remember_me if required
-          }).toString(),
-          {
-              headers: {
-                  "Authorization": `Basic ${auth}`,
-                  "Content-Type": "application/x-www-form-urlencoded"
-              }
-          }
-      );
-      //console.log("Access Token API:", response.data);
-      
-      return response.data; // Extract only the access token
+    const response = await axios.post(
+      "https://sunburst.sunsetwx.com/v1/login",
+      new URLSearchParams({
+        grant_type: "password",
+        ...(rememberMe && { type: "remember_me" }),
+      }).toString(),
+      {
+        headers: {
+          "Authorization": `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000, // 10 seconds
+      }
+    );
+
+    return { token: response.data, error: "" }; // ✅ success case
   } catch (error) {
-      //console.error("Login Failed:", error.response ? error.response.data : error.message);
-      return null; // Return null on failure
+    let message = "Unknown error";
+
+    if (error.code === "ECONNABORTED") {
+      message = "Request timed out";
+    } else if (error.response) {
+      message = `HTTP ${error.response.status}: ${
+        error.response.data?.error_description || "Server error"
+      }`;
+    } else if (error.request) {
+      message = "No response from server";
+    } else {
+      message = error.message;
+    }
+
+    console.error("Sunburst login failed:", message);
+    return { token: null, error: message }; // ✅ structured error for iOS
   }
 }
 
-module.exports = {
-    sunburstLogin
-    
-};
+module.exports = { sunburstLogin };

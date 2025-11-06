@@ -1,138 +1,98 @@
-require('dotenv').config();
-const express = require("express")
-const jwt = require('jsonwebtoken')
-const fs = require('fs')
-const app = express()
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const app = express();
+
 const { createTable, saveOrUpdateToken, getTokenFromDb } = require("./dbService");
 const { sunburstLogin } = require("./sunburstApi");
 
-//below to show response in post query
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-const PORT = process.env.PORT;
-const KEY = process.env.TOKEN_KEY;
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// dummy functions 
-app.get('/', (req, res) => {
-  res.send("Hello World")
-})
+const PORT = process.env.PORT || 3030;
 
+// ✅ Read private key once at startup (if used)
+let privateKey = null;
+try {
+  privateKey = fs.readFileSync("AuthKey_L38ADHKU82.p8");
+} catch (e) {
+  console.warn("⚠️ Private key not found (AuthKey_L38ADHKU82.p8). JWT route will be disabled.");
+}
 
-app.post('/', (req, res) => {
-  res.send('This is a post response')
-})
+// -------------------------------
+// Dummy test routes
+// -------------------------------
+app.get("/", (_, res) => res.send("Hello World"));
+app.post("/", (_, res) => res.send("This is a post response"));
 
-// dummy functions  ends
-
-app.get('/getSunburstTokenFromDbOld', (req, res) => {
-
-  (async () => {
-    const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
+// -------------------------------
+// Sunburst: Get token from DB
+// -------------------------------
+app.get("/getSunburstTokenFromDb", async (_, res) => {
+  try {
+    const token = await getTokenFromDb("Sunburst");
     if (token) {
-      // console.log("Access Token DB:", token);
-      var data = {
-        'result': token,
-      }
-      res.send(data)
-
-
+      res.json({ result: token });
     } else {
-      // console.log("Failed to retrieve access token.");
-      res.send("")
+      res.status(404).json({ error: "No cached token found" });
     }
-  })();
-})
-
-app.post('/getSunburstTokenFromDb', (req, res) => {
-
-
-  (async () => {
-    const key = req.body.key
-
-
-    console.log("getSunburstTokenFromDb.", key)
-    if (key == KEY) {
-      const token = await getTokenFromDb("Sunburst"); // Pass true for remember_me
-      if (token) {
-        // console.log("Access Token DB:", token);
-        var data = {
-          'result': token,
-        }
-        res.send(data)
-
-
-      } else {
-        // console.log("Failed to retrieve access token.");
-        res.send("")
-      }
-    } else {
-      // console.log("Not a valid key.");
-      res.send("")
-    }
-
-  })();
-})
-
-
-
-app.post('/getSunburstTokenFromApi', (req, res) => {
-
-  (async () => {
-    const key = req.body.key
-    console.log("getSunburstTokenFromApi.", key)
-    if (key == KEY) {
-      const token = await sunburstLogin(true); // Pass true for remember_me
-      if (token) {
-        await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in)
-        // console.log("Access Token API1:", token);
-        var data = {
-          'result': token.access_token,
-        }
-        res.send(data)
-
-
-      } else {
-        // console.log("Failed to retrieve access token.");
-        res.send(0)
-      }
-    } else {
-      res.send(0)
-    }
-
-  })();
-})
-
-
-const privateKey = fs.readFileSync('AuthKey_L38ADHKU82.p8')
-app.post('/getToken', (req, res) => {
-  const body = req.body
-  const token = jwt.sign({
-    sub: body.sub
-  }, privateKey, {
-    // jwtid: 'T4W24SQJKG.com.pa.myweatherkit',
-    issuer: body.issuer,
-    expiresIn: body.expiresIn,
-    keyid: body.keyid,
-    algorithm: body.algorithm,
-    header: {
-      id: body.hId
-    }
-  })
-
-  var data = {
-    'result': token,
+  } catch (err) {
+    console.error("getSunburstTokenFromDb failed:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-  res.send(data)
-  // res.send(token)
-  // console.log(token)
-})
+});
 
+// -------------------------------
+// Sunburst: Get fresh token from API
+// -------------------------------
+app.get("/getSunburstTokenFromApi", async (_, res) => {
+  try {
+    const { token, error } = await sunburstLogin(true);
+
+    if (token && token.access_token) {
+      await saveOrUpdateToken("Sunburst", token.access_token, token.expires_in);
+      res.json({ result: token.access_token });
+    } else {
+      res.status(400).json({ error: error || "Failed to get token from API" });
+    }
+  } catch (err) {
+    console.error("getSunburstTokenFromApi failed:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// -------------------------------
+// Apple JWT Token Generator
+// -------------------------------
+if (privateKey) {
+  app.post("/getToken", (req, res) => {
+    try {
+      const body = req.body;
+      const token = jwt.sign(
+        { sub: body.sub },
+        privateKey,
+        {
+          issuer: body.issuer,
+          expiresIn: body.expiresIn,
+          keyid: body.keyid,
+          algorithm: body.algorithm,
+          header: { id: body.hId },
+        }
+      );
+
+      res.json({ result: token });
+    } catch (err) {
+      console.error("JWT generation failed:", err);
+      res.status(400).json({ error: "Failed to generate token" });
+    }
+  });
+} else {
+  console.warn("⚠️ /getToken route disabled — missing private key file.");
+}
+
+// -------------------------------
+// Start Server
+// -------------------------------
 app.listen(PORT, () => {
-  console.log(`server started on port ${PORT}`);
-  if (PORT == 3030) {
-    console.log("USERNAME", process.env.SUNBURST_USERNAME);
-    console.log("PASSWORD", process.env.SUNBURST_PASSWORD);
-    console.log("URL", process.env.DATABASE_INTERNAL_URL);
-    console.log("TOKEN_KEY", KEY);
-  }
+  console.log(`🚀 Server started on port ${PORT}`);
 });
